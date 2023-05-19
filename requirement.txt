@@ -1,0 +1,6 @@
+langchain
+openai
+python-dotenv
+transformers
+sentence-transformers
+llama-index
