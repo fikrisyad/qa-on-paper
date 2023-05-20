@@ -5,7 +5,7 @@ from langchain.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import Chroma
+from langchain.vectorstores import Chroma, FAISS
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQAWithSourcesChain, ConversationalRetrievalChain
 
@@ -32,7 +32,8 @@ def load_file(pdf_url):
 
 def build_qa_engine(documents, embed_model):
     embeddings = HuggingFaceEmbeddings(model_name=embed_model)
-    db = Chroma.from_documents(documents, embeddings, persist_directory='embed_db')
+    # db = Chroma.from_documents(documents, embeddings, persist_directory='embed_db')
+    db = FAISS.from_documents(documents=documents, embedding=embeddings)
     # db.persist()
 
     # retriever = db.as_retriever(search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.8})
@@ -74,6 +75,6 @@ if __name__ == "__main__":
     embed_model = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     qa_machine = build_qa_engine(documents, embed_model)
 
-    response = qa_machine({"question": question})
+    response = qa_machine({"question": question, 'chat_history':''})
 
     print(response)
