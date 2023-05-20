@@ -6,6 +6,10 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Chroma
+from langchain.prompts import PromptTemplate
+from langchain.chains import RetrievalQAWithSourcesChain, ConversationalRetrievalChain
+
+from langchain.chat_models import ChatOpenAI
 
 from dotenv import load_dotenv
 
@@ -23,6 +27,41 @@ def load_file(pdf_url):
     documents = text_splitter.split_documents(docs)
     print(documents[:3])
 
+    return documents
+
+
+def build_qa_engine(documents, embed_model):
+    embeddings = HuggingFaceEmbeddings(model_name=embed_model)
+    db = Chroma.from_documents(documents, embeddings, persist_directory='embed_db')
+    # db.persist()
+
+    # retriever = db.as_retriever(search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.8})
+    retriever = db.as_retriever()
+
+    prompt_template = """
+    Use the following context to answer the question. 
+    If you can't find the answer in the provided context, just answer with 'I cannot find the answer in the provided context.', don't try to make up an answer.
+    Context is delimited with triple dashes. Question is delimited by triple backticks.
+    
+    Context: ---{context}---
+    
+    Question: ```{question}```
+    """
+
+    PROMPT = PromptTemplate(
+        template=prompt_template, input_variables=["context", "question"]
+    )
+    chain_type_kwargs = {"prompt": PROMPT}
+
+    qa_machine = ConversationalRetrievalChain.from_llm(
+        llm=ChatOpenAI(temperature=0, model_name='gpt-3.5-turbo'),
+        retriever=retriever,
+        combine_docs_chain_kwargs=chain_type_kwargs,
+        return_source_documents=True
+    )
+
+    return qa_machine
+
 
 def get_sys_args():
     for i in range(1, len(sys.argv)):
@@ -30,4 +69,11 @@ def get_sys_args():
 
 
 if __name__ == "__main__":
-    load_file(sys.argv[1])
+    documents = load_file(sys.argv[1])
+    question = sys.argv[2]
+    embed_model = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    qa_machine = build_qa_engine(documents, embed_model)
+
+    response = qa_machine({"question": question})
+
+    print(response)
