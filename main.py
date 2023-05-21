@@ -25,10 +25,10 @@ def load_file(pdf_url):
         response = requests.get(pdf_url)
 
         if response.status_code == 200:
-            with open('file/temp.pdf', 'wb') as f:
+            with open('./temp.pdf', 'wb') as f:
                 f.write(response.content)
 
-            loader = PyPDFLoader('file/temp.pdf')
+            loader = PyPDFLoader('./temp.pdf')
             docs = loader.load()
             text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=1000,
