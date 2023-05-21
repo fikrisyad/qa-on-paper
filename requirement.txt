@@ -1,9 +1,7 @@
 langchain
 openai
 python-dotenv
-transformers
 sentence-transformers
-llama-index
 pypdf
-typer
-chromadb
+faiss-cpu
+tiktoken
